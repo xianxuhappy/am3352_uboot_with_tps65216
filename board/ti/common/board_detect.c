@@ -215,6 +215,14 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 	ep->serial[0] = 0x0;
 	ep->config[0] = 0x0;
 
+	ep->header = TI_EEPROM_HEADER_MAGIC;
+	strlcpy(ep->name, "A335BNLT", TI_EEPROM_HDR_NAME_LEN + 1);
+	ti_eeprom_string_cleanup(ep->name);
+	strlcpy(ep->version, "00B0", TI_EEPROM_HDR_REV_LEN + 1);
+	ti_eeprom_string_cleanup(ep->version);
+
+
+#if 0
 	rc = ti_i2c_eeprom_get(bus_addr, dev_addr, TI_EEPROM_HEADER_MAGIC,
 			       sizeof(am_ep), (uint8_t *)&am_ep);
 	if (rc)
@@ -238,6 +246,7 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 
 	memcpy(ep->mac_addr, am_ep.mac_addr,
 	       TI_EEPROM_HDR_NO_OF_MAC_ADDR * TI_EEPROM_HDR_ETH_ALEN);
+#endif
 
 	return 0;
 }
