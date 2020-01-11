@@ -101,6 +101,7 @@ config TARGET_AM335X_ANTBOARD
 	select DM
 	select DM_GPIO
 	select DM_SERIAL
+	select TI_I2C_BOARD_DETECT
 	imply CMD_DM
 	imply SPL_DM
 	imply SPL_DM_SEQ_ALIAS
