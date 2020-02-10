@@ -214,4 +214,172 @@
 #define NETARGS ""
 #endif
 
+#define EEWIKI_BOOT \
+	"boot=${devtype} dev ${mmcdev}; " \
+		"if ${devtype} rescan; then " \
+			"gpio set 54;" \
+			"setenv bootpart ${mmcdev}:1; " \
+			"if test -e ${devtype} ${bootpart} /etc/fstab; then " \
+				"setenv mmcpart 1;" \
+			"fi; " \
+			"echo Checking for: /uEnv.txt ...;" \
+			"if test -e ${devtype} ${bootpart} /uEnv.txt; then " \
+				"if run loadbootenv; then " \
+					"gpio set 55;" \
+					"echo Loaded environment from /uEnv.txt;" \
+					"run importbootenv;" \
+				"fi;" \
+				"echo Checking if uenvcmd is set ...;" \
+				"if test -n ${uenvcmd}; then " \
+					"gpio set 56; " \
+					"echo Running uenvcmd ...;" \
+					"run uenvcmd;" \
+				"fi;" \
+				"echo Checking if client_ip is set ...;" \
+				"if test -n ${client_ip}; then " \
+					"if test -n ${dtb}; then " \
+						"setenv fdtfile ${dtb};" \
+						"echo using ${fdtfile} ...;" \
+					"fi;" \
+					"gpio set 56; " \
+					"if test -n ${uname_r}; then " \
+						"echo Running nfsboot_uname_r ...;" \
+						"run nfsboot_uname_r;" \
+					"fi;" \
+					"echo Running nfsboot ...;" \
+					"run nfsboot;" \
+				"fi;" \
+			"fi; " \
+			"echo Checking for: /${script} ...;" \
+			"if test -e ${devtype} ${bootpart} /${script}; then " \
+				"gpio set 55;" \
+				"setenv scriptfile ${script};" \
+				"run loadbootscript;" \
+				"echo Loaded script from ${scriptfile};" \
+				"gpio set 56; " \
+				"run bootscript;" \
+			"fi; " \
+			"echo Checking for: /boot/${script} ...;" \
+			"if test -e ${devtype} ${bootpart} /boot/${script}; then " \
+				"gpio set 55;" \
+				"setenv scriptfile /boot/${script};" \
+				"run loadbootscript;" \
+				"echo Loaded script from ${scriptfile};" \
+				"gpio set 56; " \
+				"run bootscript;" \
+			"fi; " \
+			"echo Checking for: /boot/uEnv.txt ...;" \
+			"for i in 1 2 3 4 5 6 7 ; do " \
+				"setenv mmcpart ${i};" \
+				"setenv bootpart ${mmcdev}:${mmcpart};" \
+				"if test -e ${devtype} ${bootpart} /boot/uEnv.txt; then " \
+					"gpio set 55;" \
+					"load ${devtype} ${bootpart} ${loadaddr} /boot/uEnv.txt;" \
+					"env import -t ${loadaddr} ${filesize};" \
+					"echo Loaded environment from /boot/uEnv.txt;" \
+					"if test -n ${dtb}; then " \
+						"echo debug: [dtb=${dtb}] ... ;" \
+						"setenv fdtfile ${dtb};" \
+						"echo Using: dtb=${fdtfile} ...;" \
+					"fi;" \
+					"echo Checking if uname_r is set in /boot/uEnv.txt...;" \
+					"if test -n ${uname_r}; then " \
+						"gpio set 56; " \
+						"setenv oldroot /dev/mmcblk${mmcdev}p${mmcpart};" \
+						"echo Running uname_boot ...;" \
+						"run uname_boot;" \
+					"fi;" \
+				"fi;" \
+			"done;" \
+		"fi;\0" \
+
+#define EEWIKI_UNAME_BOOT \
+	"uname_boot="\
+		"setenv bootdir /boot; " \
+		"setenv bootfile vmlinuz-${uname_r}; " \
+		"if test -e ${devtype} ${bootpart} ${bootdir}/${bootfile}; then " \
+			"echo loading ${bootdir}/${bootfile} ...; "\
+			"run loadimage;" \
+			"setenv fdtdir /boot/dtbs/${uname_r}; " \
+			"if test -e ${devtype} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+				"run loadfdt;" \
+			"else " \
+				"setenv fdtdir /usr/lib/linux-image-${uname_r}; " \
+				"if test -e ${devtype} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+					"run loadfdt;" \
+				"else " \
+					"setenv fdtdir /lib/firmware/${uname_r}/device-tree; " \
+					"if test -e ${devtype} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+						"run loadfdt;" \
+					"else " \
+						"setenv fdtdir /boot/dtb-${uname_r}; " \
+						"if test -e ${devtype} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+							"run loadfdt;" \
+						"else " \
+							"setenv fdtdir /boot/dtbs; " \
+							"if test -e ${devtype} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+								"run loadfdt;" \
+							"else " \
+								"setenv fdtdir /boot/dtb; " \
+								"if test -e ${devtype} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+									"run loadfdt;" \
+								"else " \
+									"setenv fdtdir /boot; " \
+									"if test -e ${devtype} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+										"run loadfdt;" \
+									"else " \
+										"if test -e ${devtype} ${bootpart} ${fdtfile}; then " \
+											"run loadfdt;" \
+										"else " \
+											"echo; echo unable to find [dtb=${fdtfile}] did you name it correctly? ...; " \
+											"run failumsboot;" \
+										"fi;" \
+									"fi;" \
+								"fi;" \
+							"fi;" \
+						"fi;" \
+					"fi;" \
+				"fi;" \
+			"fi; " \
+			"setenv rdfile initrd.img-${uname_r}; " \
+			"if test -e ${devtype} ${bootpart} ${bootdir}/${rdfile}; then " \
+				"echo loading ${bootdir}/${rdfile} ...; "\
+				"run loadrd;" \
+				"if test -n ${netinstall_enable}; then " \
+					"run args_netinstall; run message;" \
+					"echo debug: [${bootargs}] ... ;" \
+					"echo debug: [bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}] ... ;" \
+					"bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}; " \
+				"fi;" \
+				"if test -n ${uenv_root}; then " \
+					"run args_uenv_root;" \
+					"echo debug: [${bootargs}] ... ;" \
+					"echo debug: [bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}] ... ;" \
+					"bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}; " \
+				"fi;" \
+				"if test -n ${uuid}; then " \
+					"run args_mmc_uuid;" \
+					"echo debug: [${bootargs}] ... ;" \
+					"echo debug: [bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}] ... ;" \
+					"bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}; " \
+				"fi;" \
+				"run args_mmc_old;" \
+				"echo debug: [${bootargs}] ... ;" \
+				"echo debug: [bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}] ... ;" \
+				"bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}; " \
+			"else " \
+				"if test -n ${uenv_root}; then " \
+					"run args_uenv_root;" \
+					"echo debug: [${bootargs}] ... ;" \
+					"echo debug: [bootz ${loadaddr} - ${fdtaddr}] ... ;" \
+					"bootz ${loadaddr} - ${fdtaddr}; " \
+				"fi;" \
+				"run args_mmc_old;" \
+				"echo debug: [${bootargs}] ... ;" \
+				"echo debug: [bootz ${loadaddr} - ${fdtaddr}] ... ;" \
+				"bootz ${loadaddr} - ${fdtaddr}; " \
+			"fi;" \
+		"fi;\0" \
+
+
 #endif	/* __CONFIG_TI_ARMV7_COMMON_H__ */

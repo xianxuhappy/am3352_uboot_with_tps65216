@@ -58,9 +58,13 @@
 
 #define BOOTENV_DEV_LEGACY_MMC(devtypeu, devtypel, instance) \
 	"bootcmd_" #devtypel #instance "=" \
-	"setenv mmcdev " #instance"; "\
-	"setenv bootpart " #instance":2 ; "\
-	"run mmcboot\0"
+	"gpio clear 56; " \
+	"gpio clear 55; " \
+	"gpio clear 54; " \
+	"gpio set 53; " \
+	"setenv devtype mmc; " \
+	"setenv bootpart " #instance":1 ; "\
+	"run boot\0"
 
 #define BOOTENV_DEV_NAME_LEGACY_MMC(devtypeu, devtypel, instance) \
 	#devtypel #instance " "
@@ -169,6 +173,8 @@
 		"else " \
 			"setenv console ttyO0,115200n8;" \
 		"fi;\0" \
+	EEWIKI_BOOT \
+	EEWIKI_UNAME_BOOT \
 	NANDARGS \
 	NETARGS \
 	DFUARGS \
