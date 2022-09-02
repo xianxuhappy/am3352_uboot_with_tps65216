@@ -32,6 +32,7 @@
 #include <miiphy.h>
 #include <cpsw.h>
 #include <power/tps65217.h>
+#include <power/tps65216.h>
 #include <power/tps65910.h>
 #include <environment.h>
 #include <watchdog.h>
@@ -317,6 +318,68 @@ const struct dpll_params *get_dpll_mpu_params(void)
 	return &dpll_mpu_opp[ind][0];
 }
 
+#if TPS65216==1
+static void scale_vcores_bone(int freq)
+{
+	int mpu_vdd;
+
+	/*
+	 * Only perform PMIC configurations if board rev > A1
+	 * on Beaglebone White
+	 */
+	if (board_is_bone() && !strncmp(board_ti_get_rev(), "00A1", 4))
+		return;
+	if (i2c_probe(TPS65216_CHIP_PM))
+		return;
+
+	/*
+	 * On Beaglebone White we need to ensure we have AC power
+	 * before increasing the frequency.
+	 */
+	if (bone_not_connected_to_ac_power())
+		freq = MPUPLL_M_600;
+
+	/*
+	 * Override what we have detected since we know if we have
+	 * a Beaglebone Black it supports 1GHz.
+	 */
+	if (board_is_pb() || board_is_bone_lt())
+		freq = MPUPLL_M_1000;
+
+	switch (freq) {
+	case MPUPLL_M_1000:
+		mpu_vdd = TPS65216_DCDC2_VOLT_SEL_1325MV;
+		break;
+	case MPUPLL_M_800:
+		mpu_vdd = TPS65216_DCDC2_VOLT_SEL_1275MV;
+		break;
+	case MPUPLL_M_720:
+		mpu_vdd = TPS65216_DCDC2_VOLT_SEL_1200MV;
+		break;
+	case MPUPLL_M_600:
+	case MPUPLL_M_500:
+	case MPUPLL_M_300:
+	default:
+		mpu_vdd = TPS65216_DCDC2_VOLT_SEL_1100MV;
+		break;
+	}
+
+
+	/* Set DCDC1 (CORE) voltage to 1.10V */
+	if (tps65216_voltage_update(TPS65216_DEFDCDC1,
+				    TPS65216_DCDC2_VOLT_SEL_1100MV)) {
+		puts("tps65216_voltage_update failure\n");
+		return;
+	}
+
+	/* Set DCDC2 (MPU) voltage */
+	if (tps65216_voltage_update(TPS65216_DEFDCDC2, mpu_vdd)) {
+		puts("tps65216_voltage_update failure\n");
+		return;
+	}
+}
+
+#else
 static void scale_vcores_bone(int freq)
 {
 	int usb_cur_lim, mpu_vdd;
@@ -327,7 +390,6 @@ static void scale_vcores_bone(int freq)
 	 */
 	if (board_is_bone() && !strncmp(board_ti_get_rev(), "00A1", 4))
 		return;
-
 	if (i2c_probe(TPS65217_CHIP_PM))
 		return;
 
@@ -410,7 +472,7 @@ static void scale_vcores_bone(int freq)
 			       TPS65217_LDO_MASK))
 		puts("tps65217_reg_write failure\n");
 }
-
+#endif
 void scale_vcores_generic(int freq)
 {
 	int sil_rev, mpu_vdd;

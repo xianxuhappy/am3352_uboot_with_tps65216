@@ -1,0 +1,73 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
+/*
+ * (C) Copyright 2011-2013
+ * Texas Instruments, <www.ti.com>
+ *
+ * For more details, please see the TRM at http://www.ti.com/product/tps65217a
+ */
+
+#ifndef __POWER_TPS65216_H__
+#define __POWER_TPS65216_H__
+
+/* I2C chip address */
+#define TPS65216_CHIP_PM			0x24
+#define TPS65216 1
+
+/* Registers */
+enum {
+	TPS65216_CHIPID				= 0x00,
+	TPS65216_INTERRUPT1,
+	TPS65216_INTERRUPT2,
+	TPS65216_INTMASK1,
+	TPS65216_INTMASK2,
+	TPS65216_STATUS,
+	TPS65216_CONTROL,
+	TPS65216_FLAG,
+	TPS65216_PASSWORD,
+	TPS65216_ENABLE1,
+	TPS65216_ENABLE2,
+	TPS65216_CONFIG1,
+	TPS65216_CONFIG2,
+	TPS65216_CONFIG3,
+	TPS65216_DEFDCDC1,
+	TPS65216_DEFDCDC2,
+	TPS65216_DEFDCDC3,
+	TPS65216_DEFDCDC4,
+	TPS65216_DEFSLEW,
+	TPS65216_DEFLDO1,
+	TPS65216_SEQ1,
+	TPS65216_SEQ2,
+	TPS65216_SEQ3,
+	TPS65216_SEQ4,
+	TPS65216_SEQ5,
+	TPS65216_SEQ6,
+	TPS65216_SEQ7,
+};
+
+#define TPS65216_PROT_LEVEL_NONE		0x00
+#define TPS65216_PROT_LEVEL_1			0x01
+#define TPS65216_PROT_LEVEL_2			0x02
+
+#define TPS65216_PASSWORD_LOCK_FOR_WRITE	0x00
+#define TPS65216_PASSWORD_UNLOCK		0x7D
+
+#define TPS65216_DCDC_GO			0x80
+
+#define TPS65216_MASK_ALL_BITS			0xFF
+
+#define TPS65216_DCDC2_VOLT_SEL_950MV			0x0a
+#define TPS65216_DCDC2_VOLT_SEL_1100MV		0x1a
+#define TPS65216_DCDC2_VOLT_SEL_1125MV		0x1b
+#define TPS65216_DCDC2_VOLT_SEL_1200MV		0x23
+#define TPS65216_DCDC2_VOLT_SEL_1275MV		0x2a
+#define TPS65216_DCDC2_VOLT_SEL_1325MV		0x2f
+
+#define TPS65216_LDO_VOLTAGE_OUT_1_8		0x1f
+#define TPS65216_LDO_VOLTAGE_OUT_3_3		0x3d
+
+
+int tps65216_reg_read(uchar src_reg, uchar *src_val);
+int tps65216_reg_write(uchar prot_level, uchar dest_reg, uchar dest_val,
+		       uchar mask);
+int tps65216_voltage_update(uchar dc_cntrl_reg, uchar volt_sel);
+#endif	/* __POWER_TPS65217_H__ */
