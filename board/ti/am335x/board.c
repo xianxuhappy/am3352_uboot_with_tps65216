@@ -318,7 +318,7 @@ const struct dpll_params *get_dpll_mpu_params(void)
 	return &dpll_mpu_opp[ind][0];
 }
 
-#if TPS65216==1
+#ifdef TPS65216
 static void scale_vcores_bone(int freq)
 {
 	int mpu_vdd;
@@ -623,6 +623,7 @@ void sdram_init(void)
 	else
 		config_ddr(266, &ioregs, &ddr2_data,
 			   &ddr2_cmd_ctrl_data, &ddr2_emif_reg_data, 0);
+	udelay(50);
 }
 #endif
 
